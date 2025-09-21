@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  cementgpt:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: cementgpt-rag-agent
+    ports:
+      - "5000:5000"
+    environment:
+      # Flask configuration
+      - FLASK_ENV=production
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-me}
+      
+      # Google Cloud configuration (required)
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}
+      - GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION:-us-central1}
+      
+      # Optional: Service account key file path
+      # - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/service-account-key.json
+    
+    volumes:
+      # Mount Google Cloud credentials if using service account file
+      # - ./credentials:/app/credentials:ro
+      
+      # Mount logs directory for persistence
+      - ./logs:/app/logs
+      
+      # Optional: Mount config directory for runtime configuration
+      - ./config:/app/config:ro
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Resource limits (adjust based on your needs)
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Optional: Add a reverse proxy (nginx) for production
+  nginx:
+    image: nginx:alpine
+    container_name: cementgpt-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/ssl/certs:ro  # For SSL certificates
+    depends_on:
+      - cementgpt
+    restart: unless-stopped
+    profiles:
+      - production  # Only run with --profile production
+
+# Optional: Create named volumes for data persistence
+volumes:
+  app_logs:
+    driver: local
+  app_data:
+    driver: local
+
+# Optional: Create custom network
+networks:
+  cementgpt_network:
+    driver: bridge
