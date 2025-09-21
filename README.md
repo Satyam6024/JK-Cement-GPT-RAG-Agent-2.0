@@ -1,3 +1,22 @@
+# 1. Update your files with the improved versions above
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Configure environment
+cp .env.template .env
+# Edit .env with your Google Cloud project details
+
+# 4. Authenticate with Google Cloud
+gcloud auth application-default login
+
+# 5. Run locally
+python app.py
+# Visit: http://localhost:5000
+
+# 6. OR run with Docker
+docker-compose up --build
+
 
 # This is a custom RAG Agent allows you to:
 
